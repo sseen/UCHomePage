@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		5E6543B2179DAD4100ED0C76 /* Reveal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5E6543B1179DAD4100ED0C76 /* Reveal.framework */; };
 		5E6543B4179DAD6400ED0C76 /* CFNetwork.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5E6543B3179DAD6400ED0C76 /* CFNetwork.framework */; };
 		5E6543B6179DAD6900ED0C76 /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5E6543B5179DAD6900ED0C76 /* QuartzCore.framework */; };
 		5E6543BB179EB77000ED0C76 /* TLMenuDynamicInteractor.m in Sources */ = {isa = PBXBuildFile; fileRef = 5E6543BA179EB77000ED0C76 /* TLMenuDynamicInteractor.m */; };
@@ -86,7 +85,6 @@
 				5E8B4B711790454A006BFAB2 /* CoreGraphics.framework in Frameworks */,
 				5E8B4B731790454A006BFAB2 /* UIKit.framework in Frameworks */,
 				5E8B4B6F1790454A006BFAB2 /* Foundation.framework in Frameworks */,
-				5E6543B2179DAD4100ED0C76 /* Reveal.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
