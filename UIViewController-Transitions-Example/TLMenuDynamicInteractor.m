@@ -130,7 +130,7 @@
             BOOL presenting = self.presenting;
             
             [transitionContext completeTransition:YES];
-            
+            [[[UIApplication sharedApplication] keyWindow] addSubview:toViewController.view];
             if (presenting) {
                 toViewController.view.frame = endFrame;
             }

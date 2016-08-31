@@ -27,6 +27,7 @@
 @interface TLMasterViewController () <UIViewControllerTransitioningDelegate>
 
 @property (nonatomic, strong) id<TLMenuViewControllerPanTarget> menuInteractor;
+@property (nonatomic, strong) UIPanGestureRecognizer *gestureRecognizerPan ;
 
 @end
 
@@ -52,9 +53,9 @@
     UIBarButtonItem *menuButton = [[UIBarButtonItem alloc] initWithTitle:@"Menu" style:UIBarButtonItemStylePlain target:self.menuInteractor action:@selector(presentMenu)];
     self.navigationItem.leftBarButtonItem = menuButton;
     
-    UIScreenEdgePanGestureRecognizer *gestureRecognizer = [[UIScreenEdgePanGestureRecognizer alloc] initWithTarget:self.menuInteractor action:@selector(userDidPan:)];
-    gestureRecognizer.edges = UIRectEdgeLeft;
-    [self.view addGestureRecognizer:gestureRecognizer];
+    self.gestureRecognizerPan = [[UIPanGestureRecognizer alloc] initWithTarget:self.menuInteractor action:@selector(userDidPan:)];
+//    self.gestureRecognizerPan.edges = UIRectEdgeBottom;
+    [self.view addGestureRecognizer:_gestureRecognizerPan];
 }
 
 -(void)viewDidAppear:(BOOL)animated {
@@ -104,6 +105,26 @@
 - (id<UIViewControllerAnimatedTransitioning>)animationControllerForDismissedController:(UIViewController *)dismissed {
     TLTransitionAnimator *animator = [TLTransitionAnimator new];
     return animator;
+}
+
+#pragma mark - 
+- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer {
+    if ([gestureRecognizer isEqual:self.gestureRecognizerPan] && [otherGestureRecognizer isEqual:self.tableView.panGestureRecognizer]){
+        return YES;
+    }
+    return NO;
+}
+
+- (BOOL)gestureRecognizerShouldBegin:(UIGestureRecognizer *)gestureRecognizer {
+    if ([gestureRecognizer isEqual:self.gestureRecognizerPan]) {
+        if (gestureRecognizer.numberOfTouches > 0) {
+            CGPoint translation = [self.gestureRecognizerPan velocityInView:self.tableView];
+            return fabs(translation.y) > fabs(translation.x);
+        } else {
+            return NO;
+        }
+    }
+    return YES;
 }
 
 @end

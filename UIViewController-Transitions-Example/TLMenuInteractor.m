@@ -8,6 +8,11 @@
 
 #import "TLMenuInteractor.h"
 
+static const CGFloat kModalViewYOffset = 44.0;
+static const CGFloat kModalViewNavBarHeight = 50.0;
+static const CGFloat kNonModalViewMinScale = 0.9;
+static const CGFloat kNonModalViewMinAlpha = 0.6;
+
 @interface TLMenuInteractor () <UIViewControllerAnimatedTransitioning, UIViewControllerTransitioningDelegate, UIViewControllerInteractiveTransitioning>
 
 @property (nonatomic, assign, getter = isInteractive) BOOL interactive;
@@ -19,6 +24,7 @@
 @implementation TLMenuInteractor
 
 #pragma mark - Public Methods
+
 
 -(id)initWithParentViewController:(UIViewController *)viewController {
     if (!(self = [super init])) return nil;
@@ -39,7 +45,7 @@
         self.interactive = YES;
         
         // The side of the screen we're panning from determines whether this is a presentation (left) or dismissal (right)
-        if (location.x < CGRectGetMidX(recognizer.view.bounds)) {
+        if (location.y > CGRectGetMidY(recognizer.view.bounds)) {
             self.presenting = YES;
             TLMenuViewController *viewController = [[TLMenuViewController alloc] initWithPanTarget:self];
             viewController.modalPresentationStyle = UIModalPresentationCustom;
@@ -52,13 +58,44 @@
     }
     else if (recognizer.state == UIGestureRecognizerStateChanged) {
         // Determine our ratio between the left edge and the right edge. This means our dismissal will go from 1...0.
-        CGFloat ratio = location.x / CGRectGetWidth(self.parentViewController.view.bounds);
-        [self updateInteractiveTransition:ratio];
+        CGFloat ratio = location.y / CGRectGetWidth(self.parentViewController.view.bounds);
+        //[self updateInteractiveTransition:ratio];
+        
+        
+        CGFloat percentage = [recognizer translationInView:_parentViewController.view].y / CGRectGetHeight(_parentViewController.view.bounds);
+        NSLog(@"%f-------\n, %f\n, %@\n, %@\n", [recognizer velocityInView:recognizer.view.superview].y, percentage, recognizer.view, [self.transitionContext viewControllerForKey:UITransitionContextToViewControllerKey].view);
+        
+        float scaleFactor = kNonModalViewMinScale + (1 - kNonModalViewMinScale) * percentage;
+        float alphaVal = kNonModalViewMinAlpha + (1 - kNonModalViewMinAlpha) * percentage;
+        
+        [self.transitionContext viewControllerForKey:UITransitionContextFromViewControllerKey].view.transform = CGAffineTransformScale(CGAffineTransformIdentity, scaleFactor, scaleFactor);
+        [self.transitionContext viewControllerForKey:UITransitionContextFromViewControllerKey].view.alpha = alphaVal;
+        
+        CGRect modalVCFrame = [_transitionContext viewForKey:UITransitionContextToViewKey].frame;
+        modalVCFrame.origin.y = percentage * CGRectGetHeight(_parentViewController.view.frame) + kModalViewYOffset;
+        [self.transitionContext viewControllerForKey:UITransitionContextToViewControllerKey].view.frame = modalVCFrame;
+        
     }
     else if (recognizer.state == UIGestureRecognizerStateEnded) {
         // Depending on our state and the velocity, determine whether to cancel or complete the transition.
+        
+        CGFloat velocityY = [recognizer velocityInView:recognizer.view.superview].y;
+        
+        
+        BOOL cancelUp = (velocityY > 0) || (velocityY == 0 && recognizer.view.frame.origin.y < CGRectGetHeight(_parentViewController.view.bounds)/2);
+        
+        CGFloat points = cancelUp ? recognizer.view.frame.origin.y : CGRectGetHeight(_parentViewController.view.bounds) - recognizer.view.frame.origin.y;
+        NSTimeInterval duration = points / velocityY;
+        
+        if (duration < 0.2) {
+            duration = 0.2;
+        }
+        else if(duration > 0.4){
+            duration = 0.4;
+        }
+        
         if (self.presenting) {
-            if (velocity.x > 0) {
+            if (velocity.y < 0) {
                 [self finishInteractiveTransition];
             }
             else {
@@ -66,7 +103,7 @@
             }
         }
         else {
-            if (velocity.x < 0) {
+            if (velocity.y > 0) {
                 [self finishInteractiveTransition];
             }
             else {
@@ -155,8 +192,8 @@
             }];
         }
         else {
-            [transitionContext.containerView addSubview:toViewController.view];
-            [transitionContext.containerView addSubview:fromViewController.view];
+            [transitionContext.containerView addSubview:[transitionContext viewForKey:UITransitionContextToViewControllerKey]];
+            [transitionContext.containerView addSubview:[transitionContext viewForKey:UITransitionContextFromViewControllerKey]];
             
             endFrame.origin.x -= CGRectGetWidth([[transitionContext containerView] bounds]);
             
@@ -164,6 +201,7 @@
                 fromViewController.view.frame = endFrame;
             } completion:^(BOOL finished) {
                 [transitionContext completeTransition:YES];
+                [[[UIApplication sharedApplication] keyWindow] addSubview:toViewController.view];
             }];
         }
     }
@@ -185,7 +223,7 @@
         [transitionContext.containerView addSubview:fromViewController.view];
         [transitionContext.containerView addSubview:toViewController.view];
         
-        endFrame.origin.x -= CGRectGetWidth([[transitionContext containerView] bounds]);
+        // endFrame.origin.x -= CGRectGetWidth([[transitionContext containerView] bounds]);
     }
     else {
         [transitionContext.containerView addSubview:toViewController.view];
@@ -203,6 +241,7 @@
     
     UIViewController *fromViewController = [transitionContext viewControllerForKey:UITransitionContextFromViewControllerKey];
     UIViewController *toViewController = [transitionContext viewControllerForKey:UITransitionContextToViewControllerKey];
+    
     
     // Presenting goes from 0...1 and dismissing goes from 1...0
     CGRect frame = CGRectOffset([[transitionContext containerView] bounds], -CGRectGetWidth([[transitionContext containerView] bounds]) * (1.0f - percentComplete), 0);
@@ -230,6 +269,7 @@
             toViewController.view.frame = endFrame;
         } completion:^(BOOL finished) {
             [transitionContext completeTransition:YES];
+            [[[UIApplication sharedApplication] keyWindow] addSubview:toViewController.view];
         }];
     }
     else {
@@ -239,6 +279,7 @@
             fromViewController.view.frame = endFrame;
         } completion:^(BOOL finished) {
             [transitionContext completeTransition:YES];
+            [[[UIApplication sharedApplication] keyWindow] addSubview:toViewController.view];
         }];
     }
     
@@ -258,6 +299,7 @@
             toViewController.view.frame = endFrame;
         } completion:^(BOOL finished) {
             [transitionContext completeTransition:NO];
+            [[[UIApplication sharedApplication] keyWindow] addSubview:fromViewController.view];
         }];
     }
     else {
@@ -267,8 +309,11 @@
             fromViewController.view.frame = endFrame;
         } completion:^(BOOL finished) {
             [transitionContext completeTransition:NO];
+            [[[UIApplication sharedApplication] keyWindow] addSubview:fromViewController.view];
         }];
     }
 }
+
+
 
 @end
